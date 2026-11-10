@@ -1,0 +1,16 @@
+services:
+  plantasaurus:
+    build: .
+    image: plantasaurus:latest
+    container_name: plantasaurus
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - plantasaurus-data:/data
+
+volumes:
+  plantasaurus-data:
