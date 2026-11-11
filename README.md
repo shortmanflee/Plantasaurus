@@ -63,6 +63,7 @@ All settings are environment variables with the `PLANTASAURUS_` prefix:
 | `INGRESS_MODE` | `false` | Trust Home Assistant ingress user headers (see below) |
 | `HA_URL`, `HA_TOKEN` | unset | Home Assistant connection (settings saved in the UI take precedence) |
 | `HA_SYNC_INTERVAL_SECONDS` | `900` | How often to check that assigned HA devices still exist (`0` disables) |
+| `MCP_ENABLED` | `true` | Serve the MCP endpoint at `/mcp`. `false` removes it and locks the switch in Settings |
 
 ## API
 
@@ -96,6 +97,8 @@ PUT  /api/v1/homeassistant/config           # admin; tested before saving
 POST /api/v1/homeassistant/sync
 GET  /api/v1/homeassistant/devices?role=irrigation_zone|plant_monitor
 GET  /api/v1/homeassistant/issues            # spots whose assigned device is gone
+GET  /api/v1/mcp/status
+PUT  /api/v1/mcp/config                     # admin; turn the MCP server on/off
 POST /api/v1/plants/import-opb
 ```
 
@@ -104,6 +107,37 @@ Example:
 ```bash
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/instances?status=active
 ```
+
+## MCP server
+
+Plantasaurus includes an [MCP](https://modelcontextprotocol.io) server (built with [FastMCP](https://gofastmcp.com)), so AI assistants can read and change your plant data. It has tools for every resource above (list, get, create, update, delete), the instance actions, timelines, insights, Open Plantbook import, photos (upload, and view so the assistant can see the image), and Home Assistant device status. The tools call the REST API, so the same validation and permissions apply: lifecycle events can't be deleted, and admin-only actions need an admin's token.
+
+Create a token under **Settings → API tokens** first. Then connect in one of two ways.
+
+**HTTP (built in).** The server runs at `/mcp` and accepts `Authorization: Bearer pts_…`:
+
+```bash
+claude mcp add --transport http plantasaurus http://localhost:8000/mcp \
+  --header "Authorization: Bearer pts_…"
+```
+
+Admins can turn the server on and off under **Settings → Integrations → MCP server**. The change takes effect immediately, and connected assistants lose access straight away. The same panel shows the endpoint URL and a ready-made `claude mcp add` command. To remove the endpoint completely, whatever the setting says, set `PLANTASAURUS_MCP_ENABLED=false` and restart.
+
+**stdio**, for clients that launch a local process. It connects to a running Plantasaurus over HTTP:
+
+```json
+{
+  "mcpServers": {
+    "plantasaurus": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/Plantasaurus/backend", "run", "python", "-m", "app.mcp_server"],
+      "env": { "PLANTASAURUS_URL": "http://localhost:8000", "PLANTASAURUS_TOKEN": "pts_…" }
+    }
+  }
+}
+```
+
+Integration credentials (Open Plantbook, Home Assistant) can only be set in the UI. They are not exposed as tools, so secrets never pass through an assistant.
 
 ## Home Assistant ingress readiness
 

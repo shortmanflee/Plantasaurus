@@ -4065,6 +4065,68 @@
         }
       }
     },
+    "/api/v1/mcp/status": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Whether the MCP server is turned on",
+        "operationId": "get_status_api_v1_mcp_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/config": {
+      "put": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Turn the MCP server on or off. Takes effect immediately, including for connected clients.",
+        "operationId": "update_config_api_v1_mcp_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MCPConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -6988,6 +7050,45 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "MCPConfigUpdate": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "MCPConfigUpdate"
+      },
+      "MCPStatus": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "False when PLANTASAURUS_MCP_ENABLED=false; the switch is then locked off"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether /mcp currently accepts connections"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Endpoint path, relative to the app's base URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "enabled",
+          "path"
+        ],
+        "title": "MCPStatus"
       },
       "MediaRead": {
         "properties": {

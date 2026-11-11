@@ -31,7 +31,7 @@ import { api, BASE_PATH, S, unwrap } from "../api/client";
 import { Empty, PageHeader } from "../components/common";
 import { fmtDateTime, fromNow } from "../lib/labels";
 import { useApiMutation } from "../lib/mutations";
-import { useAuthStatus, useHAStatus, useOPBStatus } from "../lib/queries";
+import { useAuthStatus, useHAStatus, useMCPStatus, useOPBStatus } from "../lib/queries";
 import { INVALIDATE_HA } from "../components/HomeAssistant";
 
 export default function Settings() {
@@ -448,6 +448,7 @@ function Integrations({ isAdmin }: { isAdmin: boolean }) {
     <Stack maw={640}>
       <HomeAssistantSettings isAdmin={isAdmin} />
       <OpenPlantbookSettings isAdmin={isAdmin} />
+      <MCPSettings isAdmin={isAdmin} />
       <Text fw={600} mt="md">
         REST API
       </Text>
@@ -462,6 +463,94 @@ function Integrations({ isAdmin }: { isAdmin: boolean }) {
         </Anchor>
         .
       </Text>
+    </Stack>
+  );
+}
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack gap={4}>
+      <Text size="sm" fw={500}>
+        {label}
+      </Text>
+      <Group wrap="nowrap" gap="xs">
+        <Code block style={{ flex: 1, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>
+          {value}
+        </Code>
+        <CopyButton value={value}>
+          {({ copied, copy }) => (
+            <ActionIcon variant="light" onClick={copy} color={copied ? "green" : undefined} aria-label={`Copy ${label}`}>
+              {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+            </ActionIcon>
+          )}
+        </CopyButton>
+      </Group>
+    </Stack>
+  );
+}
+
+function MCPSettings({ isAdmin }: { isAdmin: boolean }) {
+  const { data: status } = useMCPStatus();
+  const { data: auth } = useAuthStatus();
+  const [, setParams] = useSearchParams();
+  const toggle = useApiMutation((enabled: boolean) => unwrap(api.PUT("/api/v1/mcp/config", { body: { enabled } })), {
+    invalidate: [["mcp"]],
+    success: (s) => (s.enabled ? "MCP server turned on" : "MCP server turned off"),
+  });
+  if (!status) return null;
+  const url = new URL(BASE_PATH + status.path, window.location.origin).href;
+  const setOff = () =>
+    modals.openConfirmModal({
+      title: "Turn off the MCP server?",
+      children: <Text size="sm">Connected AI assistants lose access straight away. API tokens and the REST API are not affected.</Text>,
+      labels: { confirm: "Turn off", cancel: "Cancel" },
+      confirmProps: { color: "red" },
+      onConfirm: () => toggle.mutate(false),
+    });
+  return (
+    <Stack gap="xs" mb="md">
+      <Group>
+        <Text fw={600}>MCP server</Text>
+        <Badge color={status.enabled ? "green" : "gray"}>{!status.available ? "Disabled" : status.enabled ? "On" : "Off"}</Badge>
+      </Group>
+      <Text size="sm" c="dimmed">
+        Lets AI assistants such as Claude read and update your plants over the Model Context Protocol. Assistants sign in with an{" "}
+        <Anchor size="sm" onClick={() => setParams({ tab: "tokens" })}>
+          API token
+        </Anchor>{" "}
+        and can do anything that token's user can, so use a non-admin account's token if you want to limit them.
+      </Text>
+      {!status.available ? (
+        <Text size="sm" c="dimmed">
+          Turned off on the server with <Code>PLANTASAURUS_MCP_ENABLED=false</Code>. Remove that setting and restart to use it.
+        </Text>
+      ) : isAdmin ? (
+        <Switch
+          label="Allow MCP connections"
+          checked={status.enabled}
+          disabled={toggle.isPending}
+          onChange={(e) => (e.currentTarget.checked ? toggle.mutate(true) : setOff())}
+        />
+      ) : (
+        <Text size="sm" c="dimmed">
+          Ask an admin to turn it {status.enabled ? "off" : "on"}.
+        </Text>
+      )}
+      {status.enabled && (
+        <>
+          {auth?.ingress && (
+            <Alert color="yellow">
+              You're using Plantasaurus through Home Assistant, which needs its own sign-in. Point assistants at Plantasaurus's
+              own address and port instead of the one below.
+            </Alert>
+          )}
+          <CopyField label="Endpoint" value={url} />
+          <CopyField
+            label="Add to Claude Code"
+            value={`claude mcp add --transport http plantasaurus ${url} --header "Authorization: Bearer <your API token>"`}
+          />
+        </>
+      )}
     </Stack>
   );
 }

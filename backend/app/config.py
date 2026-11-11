@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # How often to re-check that assigned irrigation zones / plant monitors still exist. 0 disables.
     ha_sync_interval_seconds: int = 900
 
+    # MCP server at /mcp (streamable HTTP, authenticated with API tokens). Admins can switch it
+    # on and off in the UI; false here removes the endpoint entirely and locks the switch.
+    mcp_enabled: bool = True
+
     @property
     def media_dir(self) -> Path:
         return self.data_dir / "media"
