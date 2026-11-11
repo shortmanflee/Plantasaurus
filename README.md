@@ -190,6 +190,8 @@ cd frontend && npm run typecheck
 
 `node_modules` and `.venv` are kept in Docker volumes, separate from any copies on the host. The database goes in `backend/data`. Ports 8000 (backend) and 5173 (Vite) are forwarded. Inside the container, add `--host 0.0.0.0` to the uvicorn command and `-- --host` to `npm run dev` from the sections below.
 
+You can also use VS Code's **Run and Debug** view ([.vscode/launch.json](.vscode/launch.json)). Choose **Full stack** to start uvicorn (with reload), Vite and VS Code's integrated browser at http://localhost:5173. Press F5 to debug, with breakpoints in both the Python and the TypeScript code, or Ctrl+F5 to run without the debugger. If the browser opens before Vite is ready, reload the page. **Backend: pytest** and **Backend: pytest (current file)** run the tests under the debugger.
+
 ### Backend
 
 ```bash
