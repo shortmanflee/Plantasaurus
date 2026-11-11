@@ -33,6 +33,7 @@ import { fmtDateTime, fromNow } from "../lib/labels";
 import { useApiMutation } from "../lib/mutations";
 import { useAuthStatus, useHAStatus, useMCPStatus, useOPBStatus } from "../lib/queries";
 import { INVALIDATE_HA } from "../components/HomeAssistant";
+import { Backups } from "../components/Backups";
 
 export default function Settings() {
   const { data: auth } = useAuthStatus();
@@ -48,6 +49,7 @@ export default function Settings() {
           <Tabs.Tab value="fields">Custom fields</Tabs.Tab>
           {isAdmin && <Tabs.Tab value="users">Users</Tabs.Tab>}
           <Tabs.Tab value="integrations">Integrations</Tabs.Tab>
+          {isAdmin && <Tabs.Tab value="backups">Backups</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="account">{auth?.user && <Account user={auth.user} />}</Tabs.Panel>
         <Tabs.Panel value="tokens">
@@ -64,6 +66,11 @@ export default function Settings() {
         <Tabs.Panel value="integrations">
           <Integrations isAdmin={isAdmin} />
         </Tabs.Panel>
+        {isAdmin && (
+          <Tabs.Panel value="backups">
+            <Backups />
+          </Tabs.Panel>
+        )}
       </Tabs>
     </>
   );

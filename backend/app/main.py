@@ -113,6 +113,9 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     init_engine(settings.db_url)
     if migrate:
         run_migrations(settings)
+        from app.services.backup import recover_interrupted
+
+        recover_interrupted()
 
     mcp_app = None
 

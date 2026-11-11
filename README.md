@@ -65,6 +65,28 @@ All settings are environment variables with the `PLANTASAURUS_` prefix:
 | `HA_SYNC_INTERVAL_SECONDS` | `900` | How often to check that assigned HA devices still exist (`0` disables) |
 | `MCP_ENABLED` | `true` | Serve the MCP endpoint at `/mcp`. `false` removes it and locks the switch in Settings |
 
+## Backup and restore
+
+Admins can back up and restore everything under **Settings → Backups**.
+
+- **Create backup** builds a zip with every plant, instance, location, placement, event, assessment, custom field and photo. The job runs in the background, and the backup appears in the table when it's ready. Download it from there. Zips are kept in `DATA_DIR/backups` until you delete them.
+- **Restore** (from a backup in the table, or from an uploaded zip) **replaces** all plant data and photos with the backup's contents. Your current data is backed up automatically first, with the note "Automatic, before restore", so you can undo a restore.
+- Users, API tokens and integration settings (including the Home Assistant token and Open Plantbook secret) are never put in a backup, and a restore doesn't change them. Events, assessments and photos are linked back to their users by username. If a username doesn't exist on the server you restore to, the link is cleared.
+- You can restore a backup made by the same or an older version of Plantasaurus. Backups from a newer version are refused.
+
+From a script, use an admin's API token:
+
+```bash
+H="Authorization: Bearer $TOKEN"
+# Build a backup and wait for it (without wait=true it runs in the background; poll GET /backups/{id})
+curl -X POST -H "$H" "http://localhost:8000/api/v1/backups?wait=true"
+curl -H "$H" -OJ http://localhost:8000/api/v1/backups/1/download          # save the zip
+curl -X POST -H "$H" http://localhost:8000/api/v1/backups/1/restore        # restore a backup on the server
+curl -X POST -H "$H" -F file=@plantasaurus-backup.zip http://localhost:8000/api/v1/backups/restore  # restore an uploaded zip
+```
+
+Through the [MCP server](#mcp-server), an admin's assistant can use `create_backup`, `list_backups`, `get_backup`, `restore_backup` and `delete_backup`. `create_backup` waits until the zip is ready. Restores work by backup id, so nothing needs uploading. Downloading a zip, or restoring from a zip you have, is done in the UI or over the API.
+
 ## API
 
 Everything the UI does goes through a REST API under `/api/v1`. It is documented at `/api/docs` (Swagger UI) and `/api/openapi.json`.
@@ -91,6 +113,10 @@ GET  /api/v1/locations/tree
 GET  /api/v1/plants/{id}/insights
 GET  /api/v1/spots/{id}/insights
 GET  /api/v1/insights/summary
+POST /api/v1/backups                         # admin; starts a background job
+GET  /api/v1/backups/{id}/download
+POST /api/v1/backups/{id}/restore
+POST /api/v1/backups/restore                 # multipart upload of a backup zip
 GET  /api/v1/openplantbook/search?q=…
 GET  /api/v1/homeassistant/status
 PUT  /api/v1/homeassistant/config           # admin; tested before saving
@@ -110,7 +136,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/instances?st
 
 ## MCP server
 
-Plantasaurus includes an [MCP](https://modelcontextprotocol.io) server (built with [FastMCP](https://gofastmcp.com)), so AI assistants can read and change your plant data. It has tools for every resource above (list, get, create, update, delete), the instance actions, timelines, insights, Open Plantbook import, photos (upload, and view so the assistant can see the image), and Home Assistant device status. The tools call the REST API, so the same validation and permissions apply: lifecycle events can't be deleted, and admin-only actions need an admin's token.
+Plantasaurus includes an [MCP](https://modelcontextprotocol.io) server (built with [FastMCP](https://gofastmcp.com)), so AI assistants can read and change your plant data. It has tools for every resource above (list, get, create, update, delete), the instance actions, timelines, insights, Open Plantbook import, photos (upload, and view so the assistant can see the image), backups (create, list, restore, delete; admins only), and Home Assistant device status. The tools call the REST API, so the same validation and permissions apply: lifecycle events can't be deleted, and admin-only actions need an admin's token.
 
 Create a token under **Settings → API tokens** first. Then connect in one of two ways.
 

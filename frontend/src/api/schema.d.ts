@@ -1038,6 +1038,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Backups */
+        get: operations["list_backups_api_v1_backups_get"];
+        put?: never;
+        /**
+         * Start a backup
+         * @description Builds a zip with every plant, instance, location, placement, event, assessment, custom field and photo. Users, API tokens and integration credentials are not included.
+         *
+         *     By default the job runs in the background (202): poll `GET /backups/{id}` until `status` is `ready` or `failed`. With `wait=true` the request returns once the backup is finished (201), which is simpler for scripts and MCP clients.
+         */
+        post: operations["create_backup_api_v1_backups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/{backup_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Backup */
+        get: operations["get_backup_api_v1_backups__backup_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Backup */
+        delete: operations["delete_backup_api_v1_backups__backup_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/{backup_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the backup zip */
+        get: operations["download_backup_api_v1_backups__backup_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/{backup_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore from a backup on this server
+         * @description Replaces **all** plant data and photos with the backup's contents. The current data is backed up first (listed with the note 'Automatic, before restore'); restore that backup to undo. Users, API tokens and integration settings are left as they are; people referenced in the backup are matched to existing users by username. No upload needed, so this is the one to use from MCP clients.
+         */
+        post: operations["restore_backup_api_v1_backups__backup_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore from an uploaded backup zip (multipart/form-data)
+         * @description Replaces **all** plant data and photos with the backup's contents. The current data is backed up first (listed with the note 'Automatic, before restore'); restore that backup to undo. Users, API tokens and integration settings are left as they are; people referenced in the backup are matched to existing users by username.
+         */
+        post: operations["restore_upload_api_v1_backups_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1336,6 +1434,45 @@ export interface components {
              * @default false
              */
             ingress: boolean;
+        };
+        /** BackupRead */
+        BackupRead: {
+            /** Id */
+            id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "ready" | "failed";
+            /** Filename */
+            filename: string | null;
+            /** Size Bytes */
+            size_bytes: number | null;
+            /**
+             * Counts
+             * @description Rows per table (plants, plant_instances, instance_events, media, ...) and media_files
+             */
+            counts: {
+                [key: string]: number;
+            };
+            /** Error */
+            error: string | null;
+            /** Note */
+            note: string | null;
+            /** Created By Id */
+            created_by_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /** Body_restore_upload_api_v1_backups_restore_post */
+        Body_restore_upload_api_v1_backups_restore_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_media_api_v1_media_post */
         Body_upload_media_api_v1_media_post: {
@@ -2516,6 +2653,21 @@ export interface components {
             /** Soil */
             soil?: string | null;
         };
+        /** RestoreResult */
+        RestoreResult: {
+            /**
+             * Counts
+             * @description Rows restored per table, and media_files
+             */
+            counts: {
+                [key: string]: number;
+            };
+            /**
+             * Safety Backup Id
+             * @description Backup of the data as it was just before the restore
+             */
+            safety_backup_id: number;
+        };
         /** RetireRequest */
         RetireRequest: {
             /** Occurred At */
@@ -2634,7 +2786,7 @@ export interface components {
             /** Plant Name */
             plant_name: string;
             /** Plant Image Media Id */
-            plant_image_media_id?: number | null;
+            plant_image_media_id: number | null;
             /** Nickname */
             nickname: string | null;
             /** Position Label */
@@ -5723,6 +5875,220 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MCPStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_backups_api_v1_backups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRead"][];
+                };
+            };
+        };
+    };
+    create_backup_api_v1_backups_post: {
+        parameters: {
+            query?: {
+                /** @description Build the backup before responding instead of in the background */
+                wait?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Finished backup (with `wait=true`) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRead"];
+                };
+            };
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_backup_api_v1_backups__backup_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backup_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_backup_api_v1_backups__backup_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backup_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_backup_api_v1_backups__backup_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backup_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_backup_api_v1_backups__backup_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backup_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_upload_api_v1_backups_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_restore_upload_api_v1_backups_restore_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResult"];
                 };
             };
             /** @description Validation Error */
