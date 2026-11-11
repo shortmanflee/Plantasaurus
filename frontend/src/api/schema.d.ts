@@ -1004,6 +1004,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the MCP server is turned on */
+        get: operations["get_status_api_v1_mcp_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Turn the MCP server on or off. Takes effect immediately, including for connected clients. */
+        put: operations["update_config_api_v1_mcp_config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1831,6 +1865,29 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** MCPConfigUpdate */
+        MCPConfigUpdate: {
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** MCPStatus */
+        MCPStatus: {
+            /**
+             * Available
+             * @description False when PLANTASAURUS_MCP_ENABLED=false; the switch is then locked off
+             */
+            available: boolean;
+            /**
+             * Enabled
+             * @description Whether /mcp currently accepts connections
+             */
+            enabled: boolean;
+            /**
+             * Path
+             * @description Endpoint path, relative to the app's base URL
+             */
+            path: string;
         };
         /** MediaRead */
         MediaRead: {
@@ -5620,6 +5677,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HAIssue"][];
+                };
+            };
+        };
+    };
+    get_status_api_v1_mcp_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MCPStatus"];
+                };
+            };
+        };
+    };
+    update_config_api_v1_mcp_config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MCPConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MCPStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

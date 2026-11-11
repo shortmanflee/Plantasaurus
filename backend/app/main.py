@@ -66,6 +66,46 @@ async def _ha_sync_loop(interval: int) -> None:
         await asyncio.sleep(interval)
 
 
+class _McpGate:
+    """Front door for `/mcp`.
+
+    Refuses requests while the MCP server is switched off in Settings (checked on every request, so
+    turning it off also cuts off connected clients), and serves `/mcp` as well as `/mcp/` because
+    clients don't follow redirects on POST.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "") if scope["type"] == "http" else ""
+        if path == "/mcp" or path.startswith("/mcp/"):
+            from app.services.mcp import is_enabled_now
+
+            if not await run_in_threadpool(is_enabled_now):
+                response = JSONResponse(
+                    {"detail": "The MCP server is turned off. An admin can turn it on in Settings → Integrations."},
+                    status_code=503,
+                )
+                await response(scope, receive, send)
+                return
+            if path == "/mcp":
+                scope = {**scope, "path": "/mcp/", "raw_path": b"/mcp/"}
+        await self.app(scope, receive, send)
+
+
+def _mount_mcp(app: FastAPI):
+    from app.mcp_server import Backend, build_server
+    from app.mcp_server.auth import ApiTokenVerifier
+
+    # Tools call this same app in-process, passing on the caller's API token.
+    mcp = build_server(Backend.in_process(app), auth=ApiTokenVerifier())
+    mcp_app = mcp.http_app(path="/")
+    app.mount("/mcp", mcp_app, name="mcp")
+    app.add_middleware(_McpGate)
+    return mcp_app
+
+
 def create_app(settings: Settings | None = None, *, migrate: bool = True) -> FastAPI:
     settings = settings or get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
@@ -74,14 +114,22 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     if migrate:
         run_migrations(settings)
 
+    mcp_app = None
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         task = None
         if settings.ha_sync_interval_seconds > 0:
             task = asyncio.create_task(_ha_sync_loop(settings.ha_sync_interval_seconds))
-        yield
-        if task:
-            task.cancel()
+        try:
+            if mcp_app is not None:
+                async with mcp_app.lifespan(mcp_app):
+                    yield
+            else:
+                yield
+        finally:
+            if task:
+                task.cancel()
 
     app = FastAPI(
         lifespan=lifespan,
@@ -98,6 +146,8 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     )
     app.state.session_signer = SessionSigner(resolve_secret_key(settings), settings.session_max_age_days * 86400)
     app.include_router(api_router)
+    if settings.mcp_enabled:
+        mcp_app = _mount_mcp(app)
 
     static_dir = settings.static_dir or _default_static_dir()
     index_template: str | None = None

@@ -36,7 +36,14 @@ export const useOPBStatus = () =>
     staleTime: 60_000,
   });
 
-export const useHAIssues = (enabled = true) =>
+export const useMCPStatus = () =>
+  useQuery({
+    queryKey: ["mcp", "status"],
+    queryFn: () => unwrap(api.GET("/api/v1/mcp/status")),
+    staleTime: 60_000,
+  });
+
+export const useHAIssues =(enabled = true) =>
   useQuery({
     queryKey: ["homeassistant", "issues"],
     queryFn: () => unwrap(api.GET("/api/v1/homeassistant/issues")),
