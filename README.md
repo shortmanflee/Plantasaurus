@@ -179,6 +179,17 @@ backend/    FastAPI + SQLAlchemy 2 + Alembic (Python 3.12, managed with uv)
 frontend/   React 18 + Vite + TypeScript + Mantine + TanStack Query
 ```
 
+### Dev container
+
+The repo includes a [dev container](.devcontainer/) with Python 3.12, uv and Node 22, matching the production image. Open the folder in VS Code and choose **Reopen in Container** (or run `devcontainer up --workspace-folder .`). Backend and frontend dependencies install on creation, so you can go straight to:
+
+```bash
+cd backend && uv run pytest
+cd frontend && npm run typecheck
+```
+
+`node_modules` and `.venv` are kept in Docker volumes, separate from any copies on the host. The database goes in `backend/data`. Ports 8000 (backend) and 5173 (Vite) are forwarded. Inside the container, add `--host 0.0.0.0` to the uvicorn command and `-- --host` to `npm run dev` from the sections below.
+
 ### Backend
 
 ```bash
