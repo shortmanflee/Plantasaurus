@@ -55,6 +55,7 @@ class SpotHistoryEntry(BaseModel):
     instance_id: int
     plant_id: int
     plant_name: str
+    plant_image_media_id: int | None = None
     nickname: str | None
     position_label: str | None
     started_at: datetime
@@ -281,6 +282,7 @@ def spot_insights(db: Session, spot: Spot) -> SpotInsights:
                 instance_id=p.instance_id,
                 plant_id=p.instance.plant_id,
                 plant_name=p.instance.plant.common_name,
+                plant_image_media_id=p.instance.plant.image_media_id,
                 nickname=p.instance.nickname,
                 position_label=p.position.label if p.position else None,
                 started_at=p.started_at,

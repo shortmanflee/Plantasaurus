@@ -2576,6 +2576,8 @@ export interface components {
             plant_id: number;
             /** Plant Name */
             plant_name: string;
+            /** Plant Image Media Id */
+            plant_image_media_id?: number | null;
             /** Nickname */
             nickname: string | null;
             /** Position Label */
