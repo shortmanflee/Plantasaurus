@@ -1,0 +1,43 @@
+{
+  "name": "Plantasaurus",
+  "build": { "dockerfile": "Dockerfile" },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+
+  // node_modules and the venv live on volumes so Linux builds of native
+  // packages (esbuild, argon2, pillow) never mix with the host's copies.
+  "mounts": [
+    "source=plantasaurus-${devcontainerId}-node_modules,target=${containerWorkspaceFolder}/frontend/node_modules,type=volume",
+    "source=plantasaurus-${devcontainerId}-venv,target=${containerWorkspaceFolder}/backend/.venv,type=volume",
+    "source=plantasaurus-uv-cache,target=/home/vscode/.cache/uv,type=volume"
+  ],
+
+  "containerEnv": {
+    "PLANTASAURUS_DATA_DIR": "${containerWorkspaceFolder}/backend/data",
+    "UV_LINK_MODE": "copy",
+    "UV_PYTHON_DOWNLOADS": "never"
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "forwardPorts": [8000, 5173],
+  "portsAttributes": {
+    "8000": { "label": "Backend (uvicorn)" },
+    "5173": { "label": "Frontend (Vite)", "onAutoForward": "openBrowser" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/backend/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.cwd": "${containerWorkspaceFolder}/backend",
+        "python.testing.pytestArgs": ["tests"]
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}
