@@ -198,6 +198,41 @@ def test_non_admin_is_limited_by_api(client, run_tools):
         asyncio.run(go())
 
 
+def test_backup_and_restore(run_tools, client, garden):
+    backup = run_tools(("create_backup", {}))
+    assert backup["status"] == "ready" and backup["counts"]["plants"] == 1
+    assert [b["id"] for b in run_tools(("list_backups", {}))] == [backup["id"]]
+    assert run_tools(("get_backup", {"backup_id": backup["id"]}))["filename"] == backup["filename"]
+
+    run_tools(("create_plant", {"plant": {"common_name": "Fern"}}))
+    result = run_tools(("restore_backup", {"backup_id": backup["id"]}))
+    assert result["counts"]["plants"] == 1
+    assert [p["common_name"] for p in client.get("/api/v1/plants").json()["items"]] == ["Monstera"]
+
+    # the safety backup holds the data from just before the restore, so it can be undone
+    run_tools(("restore_backup", {"backup_id": result["safety_backup_id"]}))
+    assert {p["common_name"] for p in client.get("/api/v1/plants").json()["items"]} == {"Monstera", "Fern"}
+
+    run_tools(("delete_backup", {"backup_id": backup["id"]}))
+    with pytest.raises(ToolError, match="HTTP 404"):
+        run_tools(("get_backup", {"backup_id": backup["id"]}))
+
+
+def test_backups_are_admin_only(client):
+    client.post("/api/v1/users", json={"username": "kim", "password": "password123"})
+    kim = client.__class__(client.app)
+    kim.post("/api/v1/auth/login", json={"username": "kim", "password": "password123"})
+    mcp = build_server(Backend.in_process(client.app, kim.post("/api/v1/tokens", json={"name": "k"}).json()["token"]))
+
+    async def go(name, args):
+        async with Client(mcp) as c:
+            await c.call_tool(name, args)
+
+    for name, args in (("create_backup", {}), ("list_backups", {}), ("restore_backup", {"backup_id": 1})):
+        with pytest.raises(ToolError, match="HTTP 403"):
+            asyncio.run(go(name, args))
+
+
 # ---- Mounted /mcp endpoint over real HTTP -----------------------------------
 
 
@@ -240,10 +275,13 @@ def test_mounted_endpoint_runs_tools(server_url, token, client, garden):
             tools = {t.name for t in await c.list_tools()}
             me = (await c.call_tool("whoami", {})).data
             inst = (await c.call_tool("create_instance", {"instance": {"plant_id": garden["plant"]["id"]}})).data
-            return tools, me, inst
+            backup = (await c.call_tool("create_backup", {})).data
+            restored = (await c.call_tool("restore_backup", {"backup_id": backup["id"]})).data
+            return tools, me, inst, backup, restored
 
-    tools, me, inst = asyncio.run(go())
-    assert {"create_plant", "move_instance", "delete_event"} <= tools
+    tools, me, inst, backup, restored = asyncio.run(go())
+    assert {"create_plant", "move_instance", "delete_event", "create_backup", "restore_backup"} <= tools
+    assert backup["status"] == "ready" and restored["counts"]["plant_instances"] == 1
     assert me["username"] == "admin"
     assert client.get(f"/api/v1/instances/{inst['id']}").status_code == 200
 

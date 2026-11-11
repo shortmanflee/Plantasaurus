@@ -55,6 +55,8 @@ Tips:
 - Prefer retire_instance over delete_instance: deleting destroys history and insights.
 - Times are ISO 8601; omit them to mean "now". Times cannot be in the future.
 - Custom fields (list_custom_fields) define extra keys allowed in the `attributes` of plants, instances, areas and spots.
+- Backups (admin): create_backup saves everything to a zip on the server; restore_backup replaces ALL data
+  with a backup (a safety backup of the current data is taken first). Only restore when explicitly asked.
 """
 
 READ = {"readOnlyHint": True, "openWorldHint": False}
@@ -614,6 +616,40 @@ def build_server(backend: Backend, *, auth: AuthProvider | None = None) -> FastM
         """Revoke an API token. Revoking the token this MCP connection uses will end its access."""
         await api.delete(f"/tokens/{token_id}")
         return f"Revoked API token {token_id}"
+
+    # ---- Backups ------------------------------------------------------------
+
+    @mcp.tool(annotations=READ, tags={"backups", "admin"})
+    async def list_backups() -> list[dict]:
+        """List backups on the server, newest first, with their status and what they contain (admin only)."""
+        return await api.get("/backups")
+
+    @mcp.tool(annotations=READ, tags={"backups", "admin"})
+    async def get_backup(backup_id: int) -> dict:
+        """Get one backup's status, size and row counts (admin only)."""
+        return await api.get(f"/backups/{backup_id}")
+
+    @mcp.tool(annotations=CREATE, tags={"backups", "admin"})
+    async def create_backup() -> dict:
+        """Back up every plant, instance, location, placement, event, assessment, custom field and photo
+        to a zip on the server (admin only). Waits until it is finished and returns it; check `status`
+        is "ready". Users, API tokens and integration credentials are not included. The zip can be
+        downloaded from Settings → Backups or GET /api/v1/backups/{id}/download."""
+        return await api.post("/backups", wait=True)
+
+    @mcp.tool(annotations={**DELETE, "idempotentHint": False}, tags={"backups", "admin"})
+    async def restore_backup(backup_id: int) -> dict:
+        """Replace ALL plant data and photos with the contents of a backup on the server (admin only).
+        Only do this when the user has clearly asked for it. The current data is backed up first; the
+        result's `safety_backup_id` is that backup, so restoring it undoes this. Users, API tokens and
+        integration settings are not changed."""
+        return await api.post(f"/backups/{backup_id}/restore")
+
+    @mcp.tool(annotations=DELETE, tags={"backups", "admin"})
+    async def delete_backup(backup_id: int) -> str:
+        """Delete a backup zip from the server (admin only)."""
+        await api.delete(f"/backups/{backup_id}")
+        return f"Deleted backup {backup_id}"
 
     # ---- Home Assistant -----------------------------------------------------
 

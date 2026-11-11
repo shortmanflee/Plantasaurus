@@ -80,3 +80,17 @@ export async function uploadMedia(file: File, opts: UploadOptions = {}): Promise
   if (!response.ok) throw new ApiError(errorMessage(body, "Upload failed"), response.status);
   return body;
 }
+
+export function backupDownloadUrl(id: number): string {
+  return `${BASE_PATH}api/v1/backups/${id}/download`;
+}
+
+/** Upload a backup zip and restore from it. Replaces all plant data and photos. */
+export async function restoreBackupFile(file: File): Promise<S["RestoreResult"]> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${BASE_PATH}api/v1/backups/restore`, { method: "POST", body: form, credentials: "same-origin" });
+  const body = await response.json().catch(() => undefined);
+  if (!response.ok) throw new ApiError(errorMessage(body, "Restore failed"), response.status);
+  return body;
+}

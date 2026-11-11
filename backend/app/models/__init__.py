@@ -1,3 +1,4 @@
+from app.models.backup import Backup
 from app.models.custom_field import CustomFieldDefinition
 from app.models.homeassistant import HAConfig, HADevice
 from app.models.instance import Assessment, InstanceEvent, Placement, PlantInstance
@@ -12,6 +13,7 @@ __all__ = [
     "ApiToken",
     "Area",
     "Assessment",
+    "Backup",
     "CustomFieldDefinition",
     "HAConfig",
     "HADevice",

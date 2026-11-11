@@ -4127,6 +4127,280 @@
         }
       }
     },
+    "/api/v1/backups": {
+      "get": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "List Backups",
+        "operationId": "list_backups_api_v1_backups_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackupRead"
+                  },
+                  "title": "Response List Backups Api V1 Backups Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Start a backup",
+        "description": "Builds a zip with every plant, instance, location, placement, event, assessment, custom field and photo. Users, API tokens and integration credentials are not included.\n\nBy default the job runs in the background (202): poll `GET /backups/{id}` until `status` is `ready` or `failed`. With `wait=true` the request returns once the backup is finished (201), which is simpler for scripts and MCP clients.",
+        "operationId": "create_backup_api_v1_backups_post",
+        "parameters": [
+          {
+            "name": "wait",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Build the backup before responding instead of in the background",
+              "default": false,
+              "title": "Wait"
+            },
+            "description": "Build the backup before responding instead of in the background"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRead"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Finished backup (with `wait=true`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{backup_id}": {
+      "get": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Get Backup",
+        "operationId": "get_backup_api_v1_backups__backup_id__get",
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Delete Backup",
+        "operationId": "delete_backup_api_v1_backups__backup_id__delete",
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{backup_id}/download": {
+      "get": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Download the backup zip",
+        "operationId": "download_backup_api_v1_backups__backup_id__download_get",
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{backup_id}/restore": {
+      "post": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Restore from a backup on this server",
+        "description": "Replaces **all** plant data and photos with the backup's contents. The current data is backed up first (listed with the note 'Automatic, before restore'); restore that backup to undo. Users, API tokens and integration settings are left as they are; people referenced in the backup are matched to existing users by username. No upload needed, so this is the one to use from MCP clients.",
+        "operationId": "restore_backup_api_v1_backups__backup_id__restore_post",
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/restore": {
+      "post": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Restore from an uploaded backup zip (multipart/form-data)",
+        "description": "Replaces **all** plant data and photos with the backup's contents. The current data is backed up first (listed with the note 'Automatic, before restore'); restore that backup to undo. Users, API tokens and integration settings are left as they are; people referenced in the backup are matched to existing users by username.",
+        "operationId": "restore_upload_api_v1_backups_restore_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_restore_upload_api_v1_backups_restore_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -5185,6 +5459,132 @@
           "ingress"
         ],
         "title": "AuthStatus"
+      },
+      "BackupRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "ready",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts",
+            "description": "Rows per table (plants, plant_instances, instance_events, media, ...) and media_files"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "filename",
+          "size_bytes",
+          "counts",
+          "error",
+          "note",
+          "created_by_id",
+          "created_at",
+          "completed_at"
+        ],
+        "title": "BackupRead"
+      },
+      "Body_restore_upload_api_v1_backups_restore_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_restore_upload_api_v1_backups_restore_post"
       },
       "Body_upload_media_api_v1_media_post": {
         "properties": {
@@ -9515,6 +9915,29 @@
         },
         "type": "object",
         "title": "RepotRequest"
+      },
+      "RestoreResult": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts",
+            "description": "Rows restored per table, and media_files"
+          },
+          "safety_backup_id": {
+            "type": "integer",
+            "title": "Safety Backup Id",
+            "description": "Backup of the data as it was just before the restore"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "safety_backup_id"
+        ],
+        "title": "RestoreResult"
       },
       "RetireRequest": {
         "properties": {
