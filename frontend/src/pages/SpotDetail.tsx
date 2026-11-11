@@ -1,11 +1,11 @@
-import { Alert, Anchor, Badge, Button, Card, Group, Modal, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { Alert, Anchor, Badge, Button, Card, Group, Modal, SimpleGrid, Stack, Switch, Table, Text } from "@mantine/core";
 import { IconAlertTriangle, IconPencil } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, S, unwrap } from "../api/client";
 import { CustomFieldValues } from "../components/CustomFields";
-import { Empty, PageHeader, QueryState, Stars } from "../components/common";
+import { Empty, PageHeader, PlantImage, QueryState, Stars } from "../components/common";
 import { DeviceBadge, INVALIDATE_HA, problemText, ROLE_LABELS } from "../components/HomeAssistant";
 import { SpotForm, spotTraits } from "../components/LocationForms";
 import { useApiMutation } from "../lib/mutations";
@@ -15,6 +15,7 @@ import { ENVIRONMENTS, EVENT_TYPES, fmtDate, label } from "../lib/labels";
 export default function SpotDetail() {
   const id = Number(useParams().id);
   const [editing, setEditing] = useState(false);
+  const [showRemoved, setShowRemoved] = useState(false);
   const { data: spot, isLoading, error } = useQuery({
     queryKey: ["spots", id],
     queryFn: () => unwrap(api.GET("/api/v1/spots/{spot_id}", { params: { path: { spot_id: id } } })),
@@ -27,6 +28,12 @@ export default function SpotDetail() {
 
   if (!spot) return <QueryState isLoading={isLoading} error={error} />;
   const area = areas.find((a) => a.id === spot.area_id);
+  const history = (insights?.history.filter((h) => showRemoved || h.outcome === "current") ?? []).sort((a, b) => {
+    if (a.position_label === b.position_label) return 0;
+    if (a.position_label == null) return 1;
+    if (b.position_label == null) return -1;
+    return a.position_label.localeCompare(b.position_label, undefined, { numeric: true, sensitivity: "base" });
+  });
 
   return (
     <>
@@ -74,10 +81,16 @@ export default function SpotDetail() {
               <Stars value={insights.avg_overall} />
             </Card>
           </SimpleGrid>
-          {insights.history.length ? (
+          <Switch
+            label="Show removed plants"
+            checked={showRemoved}
+            onChange={(e) => setShowRemoved(e.currentTarget.checked)}
+          />
+          {history.length ? (
             <Table>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th></Table.Th>
                   <Table.Th>Plant</Table.Th>
                   <Table.Th>Position</Table.Th>
                   <Table.Th>From</Table.Th>
@@ -88,8 +101,11 @@ export default function SpotDetail() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {insights.history.map((h) => (
+                {history.map((h) => (
                   <Table.Tr key={h.placement_id}>
+                    <Table.Td w={48}>
+                      <PlantImage mediaId={h.plant_image_media_id} size={36} />
+                    </Table.Td>
                     <Table.Td>
                       <Anchor component={Link} to={`/instances/${h.instance_id}`}>
                         {h.nickname || h.plant_name}
@@ -112,7 +128,7 @@ export default function SpotDetail() {
               </Table.Tbody>
             </Table>
           ) : (
-            <Empty>Nothing has been planted here yet.</Empty>
+            <Empty>{insights.history.length ? "No plants are here now." : "Nothing has been planted here yet."}</Empty>
           )}
         </Stack>
       )}

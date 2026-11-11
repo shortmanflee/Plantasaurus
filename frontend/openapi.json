@@ -9886,6 +9886,17 @@
             "type": "string",
             "title": "Plant Name"
           },
+          "plant_image_media_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plant Image Media Id"
+          },
           "nickname": {
             "anyOf": [
               {
@@ -9951,6 +9962,7 @@
           "instance_id",
           "plant_id",
           "plant_name",
+          "plant_image_media_id",
           "nickname",
           "position_label",
           "started_at",
