@@ -10,3 +10,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends sqlite3 \
     && rm -rf /var/lib/apt/lists/*
+
+# Docker creates the parent of a nested volume mount (/home/vscode/.cache/uv)
+# as root. Create it in the image, owned by the dev user, so tools like
+# code-server can write to ~/.cache.
+RUN mkdir -p /home/vscode/.cache/uv \
+    && chown -R vscode:vscode /home/vscode/.cache
